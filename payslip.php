@@ -79,12 +79,28 @@ $pushEarn('OT',
   gvr($ps, ['TOTAL-OVERTIME','OT HRS AMOUNT','OT Amount','OT']),
   gvr($ps, ['OT HOURS','OT Hours','ot_hours'])
 );
+
+/* Allowances (with hours where available) */
+// Campaign Allow (hours in "CAMPAIGN ALLOW", amount in "CAMPAIGN ALLOW AMOUNT")
+$pushEarn(
+  'Campaign Allow',
+  gvr($ps, ['CAMPAIGN ALLOW AMOUNT','Campaign Allow Amount']),
+  gvr($ps, ['CAMPAIGN ALLOW']) // this column holds the hours
+);
+
+// Transpo Allow (hours in "TRANSPO ALLOW", amount in "TRANSPO ALLOW AMOUNT")
+$pushEarn(
+  'Transpo Allow',
+  gvr($ps, ['TRANSPO ALLOW AMOUNT','Transpo Allow Amount']),
+  gvr($ps, ['TRANSPO ALLOW']) // this column holds the hours
+);
+
+
 /* Holiday & Adjustment */
 $pushEarn('Holiday',     gvr($ps, ['HOLIDAY']));
 $pushEarn('Adjustment',  gvr($ps, ['ADJUSTMENT','ADJ']));
+
 /* Allowances */
-$pushEarn('Campaign Allow', gvr($ps, ['CAMPAIGN ALLOW AMOUNT','Campaign Allow Amount']));
-$pushEarn('Transpo Allow',  gvr($ps, ['TRANSPO ALLOW AMOUNT','Transpo Allow Amount']));
 $pushEarn('COLA',           gvr($ps, ['COLA']));
 $pushEarn('Laundry Allow',  gvr($ps, ['LAUNDRY-ALLOWANCE']));
 $pushEarn('Rice Allow',     gvr($ps, ['RICE-ALLOWANCE']));
