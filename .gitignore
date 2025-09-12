@@ -1,0 +1,21 @@
+# Ignore environment config
+.env
+
+# Ignore Google service account key
+credentials/google-service-account.json
+
+# Ignore local OS/editor files
+.DS_Store
+Thumbs.db
+*.log
+
+# Ignore Composer dependencies (reinstall on deploy)
+vendor/
+
+# Ignore cache / storage
+storage/cache/
+storage/logs/
+
+# Ignore IDE/editor project settings
+.vscode/
+.idea/
