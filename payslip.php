@@ -45,7 +45,9 @@ function num($v){
 function peso($v){ return '₱'.number_format(num($v),2); }
 function hrs($v){
   $n = num($v);
-  return $n > 0 ? rtrim(rtrim(number_format($n,1),'.0')).' hrs' : '—';
+  if (abs($n) < 0.005) return '—';
+  $formatted = number_format($n, 1);
+  return $formatted . ' hrs';
 }
 
 /* ----------------- Fields ---------------- */
@@ -243,10 +245,9 @@ tfoot td{border-top:1px solid #e5e7eb;font-weight:800}
         <select name="idx" id="filterSelect">
           <?php foreach ($all as $i=>$row): ?>
             <?php
-              $d = htmlspecialchars(gv($row, ['payroll_date','PAYROLL DATE'], '—'));
-              $n = ' — Net: ' . peso(gvr($row, ['net_pay','TOTAL-NET-PAY','TOTAL NET PAY','TOTAL AMOUNT RECEIVED']));
-            ?>
-            <option value="<?=$i?>" <?= $i===$idx?'selected':'' ?>><?=$d?><?=$n?></option>
+               $d = htmlspecialchars(gv($row, ['payroll_date','PAYROLL DATE'], '—'));
+              ?>
+             <option value="<?=$i?>" <?= $i===$idx?'selected':'' ?>><?=$d?></option>
           <?php endforeach; ?>
         </select>
       </form>
