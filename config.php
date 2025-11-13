@@ -69,7 +69,7 @@ define('MAIL_PASS',      envr('MAIL_PASS', ''));
 define('MAIL_FROM',      envr('MAIL_FROM', ''));
 define('MAIL_FROM_NAME', envr('MAIL_FROM_NAME', 'TA Payslip System'));
 
-define('APP_URL',               envr('APP_URL', 'http://localhost'));
+define('APP_URL',               envr('APP_URL', 'https://ta-payslip.onrender.com/'));
 define('RESET_TOKEN_TTL_MIN', (int)envr('RESET_TOKEN_TTL_MIN', 30));
 define('RESET_SECRET',          envr('RESET_SECRET', 'change-me'));
 
