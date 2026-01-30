@@ -1,21 +1,7 @@
 <?php
 declare(strict_types=1);
 
-require __DIR__ . '/vendor/autoload.php';
-
-use Dotenv\Dotenv;
-
-/** Load .env only if it exists (Render uses real env vars). */
-if (is_file(__DIR__ . '/.env')) {
-    try {
-        Dotenv::createImmutable(__DIR__)->load();
-    } catch (Throwable $e) {
-        // Never echo to output (would break headers). Log instead.
-        error_log('[dotenv] ' . $e->getMessage());
-    }
-}
-
-/** Safe env getter: Render puts vars in getenv()/$_SERVER; Dotenv populates $_ENV. */
+/** Safe env getter: works with $_ENV and $_SERVER. */
 function envr(string $k, $default = null) {
     $v = getenv($k);
     if ($v !== false) return $v;
@@ -61,6 +47,12 @@ define('SHEET_ID',          envr('GOOGLE_SHEET_ID', ''));
 define('SHEET_TA_MS',       envr('SHEET_TA_MS', 'TA_MS'));
 define('SHEET_TA_AGENTS',   envr('SHEET_TA_AGENTS', 'TA_AGENTS'));
 define('SHEET_CREDENTIALS', envr('SHEET_CREDENTIALS', 'CREDENTIALS'));
+
+/** Database configuration */
+define('DB_HOST',     envr('DB_HOST', 'localhost'));
+define('DB_USER',     envr('DB_USER', 'root'));
+define('DB_PASS',     envr('DB_PASS', ''));
+define('DB_NAME',     envr('DB_NAME', 'payslip'));
 
 define('MAIL_HOST',      envr('MAIL_HOST', 'smtp.gmail.com'));
 define('MAIL_PORT', (int)envr('MAIL_PORT', 587));
