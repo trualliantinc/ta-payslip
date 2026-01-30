@@ -76,11 +76,6 @@ $pushEarn('Night Diff',
   gvr($ps, ['REGULAR NDF AMOUNT','NDF AMOUNT','REGULAR NDF AMT']),
   gvr($ps, ['REGULAR NDF HRS','NDF HRS'])
 );
-/* OT */
-$pushEarn('OT',
-  gvr($ps, ['TOTAL-OVERTIME','OT HRS AMOUNT','OT Amount','OT']),
-  gvr($ps, ['OT HOURS','OT Hours','ot_hours'])
-);
 
 /* Allowances (with hours where available) */
 // Campaign Allow (hours in "CAMPAIGN ALLOW", amount in "CAMPAIGN ALLOW AMOUNT")
@@ -97,6 +92,11 @@ $pushEarn(
   gvr($ps, ['TRANSPO ALLOW']) // this column holds the hours
 );
 
+/* OT */
+$pushEarn('OT',
+  gvr($ps, ['TOTAL-OVERTIME','OT HRS AMOUNT','OT Amount','OT']),
+  gvr($ps, ['OT HOURS','OT Hours','ot_hours'])
+);
 
 /* Holiday & Adjustment */
 $pushEarn('Holiday',     gvr($ps, ['HOLIDAY']));
