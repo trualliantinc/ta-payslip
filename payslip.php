@@ -109,6 +109,18 @@ $pushEarn('Rice Allow',     gvr($ps, ['RICE-ALLOWANCE']));
 $pushEarn('Clothing Allow', gvr($ps, ['CLOTHING-ALLOWANCE']));
 $pushEarn('Meal Allow',     gvr($ps, ['MEAL-ALLOWANCE']));
 $pushEarn('Fuel Allow',     gvr($ps, ['FUEL-ALLOWANCE']));
+
+/* OT - MOVED TO AFTER ALLOWANCES */
+$pushEarn('OT',
+  gvr($ps, ['TOTAL-OVERTIME','OT HRS AMOUNT','OT Amount','OT']),
+  gvr($ps, ['OT HOURS','OT Hours','ot_hours'])
+);
+
+/* Holiday & Adjustment */
+$pushEarn('Holiday',     gvr($ps, ['HOLIDAY']));
+$pushEarn('Adjustment',  gvr($ps, ['ADJUSTMENT','ADJ']));
+
+/* Other allowances */
 $pushEarn('EGOV Refund',    gvr($ps, ['EGOV REFUND']));
 $pushEarn('Dispute',        gvr($ps, ['DISPUTE']));
 
