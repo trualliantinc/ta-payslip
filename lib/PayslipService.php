@@ -1,13 +1,13 @@
 <?php
 // lib/PayslipService.php
 require_once __DIR__ . '/../config.php';
-require_once __DIR__ . '/Database.php';
+require_once __DIR__ . '/GoogleSheets.php';
 
 class PayslipService {
-  private Database $db;
+  private GoogleSheets $gs;
 
   public function __construct() {
-    $this->db = new Database(DB_HOST, DB_USER, DB_PASS, DB_NAME);
+    $this->gs = new GoogleSheets(SHEET_ID, GOOGLE_CREDS);
   }
 
   /* ----------------- helpers ----------------- */
@@ -129,18 +129,18 @@ class PayslipService {
     $pwd_in = self::normText($password); // keep as plaintext login (per your app)
 
     try {
-      $rows = $this->db->getAssoc('credentials');
+      $rows = $this->gs->getAssoc(SHEET_CREDENTIALS);
 
       foreach ($rows as $r) {
-        $rid = self::normText(self::gv($r, ['employee_id']));
-        $rpw = self::normText(self::gv($r, ['password']));
+        $rid = self::normText(self::gv($r, ['EMPLOYEE ID','ID']));
+        $rpw = self::normText(self::gv($r, ['PASSWORD']));
 
         if ($rid === $id_in && $rpw === $pwd_in) {
           return [
             'employee_id' => $rid,
-            'name'        => self::gv($r, ['name']),
-            'email'       => self::gv($r, ['email']),
-            'designation' => self::gv($r, ['designation']),
+            'name'        => self::gv($r, ['NAME']),
+            'email'       => self::gv($r, ['EMAIL']),
+            'designation' => self::gv($r, ['DESIGNATION']),
           ];
         }
       }
@@ -154,45 +154,27 @@ class PayslipService {
   public function getPayslipsByEmployee(string $employeeId): array {
     $employeeId = self::normText($employeeId);
 
-    try {
-      $rows = $this->db->getAssoc('payslips');
-      
-      $payslips = array_filter(
-        array_map(function($r) {
-          return [
-            'employee_id'    => self::gv($r, ['employee_id']),
-            'name'           => self::gv($r, ['name']),
-            'email'          => self::gv($r, ['email']),
-            'designation'    => self::gv($r, ['designation']),
-            'payroll_date'   => self::gv($r, ['payroll_date']),
-            'gross_pay'      => self::gv($r, ['gross_pay']),
-            'deductions'     => self::gv($r, ['deductions']),
-            'net_pay'        => self::gv($r, ['net_pay']),
-            'benefits'       => self::gv($r, ['benefits']),
-            'tax'            => self::gv($r, ['tax']),
-            'notes'          => self::gv($r, ['notes']),
-            'sort_key'       => self::buildSortKey(self::gv($r, ['payroll_date'])),
-            'raw'            => $r,
-          ];
-        }, $rows),
-        fn($x) => self::normText($x['employee_id'] ?? '') === $employeeId
-      );
+    $ms = array_filter(
+      array_map([$this,'mapMS'], $this->gs->getAssoc(SHEET_TA_MS)),
+      fn($x) => self::normText($x['employee_id'] ?? '') === $employeeId
+    );
 
-      $merged = array_values($payslips);
+    $agents = array_filter(
+      array_map([$this,'mapAgent'], $this->gs->getAssoc(SHEET_TA_AGENTS)),
+      fn($x) => self::normText($x['employee_id'] ?? '') === $employeeId
+    );
 
-      // newest first by sort_key; fallback to string compare
-      usort($merged, function($a, $b){
-        $sa = (int)($a['sort_key'] ?? 0);
-        $sb = (int)($b['sort_key'] ?? 0);
-        if ($sb !== $sa) return $sb <=> $sa;
-        return strcmp((string)($b['payroll_date'] ?? ''), (string)($a['payroll_date'] ?? ''));
-      });
+    $merged = array_values(array_merge($ms, $agents));
 
-      return $merged;
-    } catch (\Throwable $e) {
-      error_log('getPayslipsByEmployee error: '.$e->getMessage());
-      return [];
-    }
+    // newest first by sort_key; fallback to string compare
+    usort($merged, function($a, $b){
+      $sa = (int)($a['sort_key'] ?? 0);
+      $sb = (int)($b['sort_key'] ?? 0);
+      if ($sb !== $sa) return $sb <=> $sa;
+      return strcmp((string)($b['payroll_date'] ?? ''), (string)($a['payroll_date'] ?? ''));
+    });
+
+    return $merged;
   }
 
   public function getLatestPayslip(string $employeeId): ?array {

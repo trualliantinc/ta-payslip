@@ -1,6 +1,6 @@
 <?php
 require __DIR__.'/config.php';
-require __DIR__.'/lib/Database.php';
+require __DIR__.'/lib/GoogleSheets.php';
 
 $uid   = $_POST['uid']    ?? '';
 $token = $_POST['token']  ?? '';
@@ -13,28 +13,31 @@ $msgBody  = 'Your password reset link is not valid anymore. Please request a new
 
 if ($uid && $token && $pwd && $pwd === $pwd2) {
   try {
-    $db   = new Database(DB_HOST, DB_USER, DB_PASS, DB_NAME);
-    $user = $db->getRowByKey('credentials', 'employee_id', $uid);
+    $gs   = new GoogleSheets(SHEET_ID, GOOGLE_CREDS);
+    $rows = $gs->getAssoc(SHEET_CREDENTIALS);
 
-    if ($user) {
-      $hash = hash_hmac('sha256', $token, RESET_SECRET);
-      if (!empty($user['reset_token_hash']) &&
-          hash_equals($user['reset_token_hash'], $hash) &&
-          strtotime($user['reset_expires'] ?? '1970-01-01') > time()) {
+    foreach ($rows as $r){
+      if (trim((string)($r['EMPLOYEE ID'] ?? '')) === trim($uid)) {
+        $hash = hash_hmac('sha256', $token, $_ENV['RESET_SECRET']);
+        if (!empty($r['RESET_TOKEN_HASH']) &&
+            hash_equals($r['RESET_TOKEN_HASH'], $hash) &&
+            strtotime($r['RESET_EXPIRES'] ?? '1970-01-01') > time()) {
 
-        // 🔐 Use plain text (current behavior) OR switch to hashed password:
-        // $newValue = password_hash($pwd, PASSWORD_BCRYPT); // recommend this + update login to password_verify()
-        $newValue = $pwd;
+          // 🔐 Use plain text (current behavior) OR switch to hashed password:
+          // $newValue = password_hash($pwd, PASSWORD_BCRYPT); // recommend this + update login to password_verify()
+          $newValue = $pwd;
 
-        $db->updateRowByKey('credentials', 'employee_id', $uid, [
-          'password'         => $newValue,
-          'reset_token_hash' => '',
-          'reset_expires'    => ''
-        ]);
+          $gs->updateRowByKey(SHEET_CREDENTIALS, 'EMPLOYEE ID', $uid, [
+            'PASSWORD'         => $newValue,
+            'RESET_TOKEN_HASH' => '',
+            'RESET_EXPIRES'    => ''
+          ]);
 
-        $ok = true;
-        $msgTitle = 'Password updated';
-        $msgBody  = 'Your password has been changed successfully. You can now sign in with your new password.';
+          $ok = true;
+          $msgTitle = 'Password updated';
+          $msgBody  = 'Your password has been changed successfully. You can now sign in with your new password.';
+        }
+        break;
       }
     }
   } catch (Throwable $e) {

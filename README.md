@@ -1,16 +1,16 @@
 # TA Payslip System
 
-A PHP web app for managing and viewing employee payslips using **MySQL** via phpMyAdmin as the backend database, with password reset via email.
+A PHP web app for managing and viewing employee payslips using **Google Sheets** as the backend database, with password reset via email.
 
 ---
 
 ## 🚀 Features
 
-* Employee login with credentials stored in MySQL `credentials` table.
-* Fetches payslip data from MySQL `payslips` table.
+* Employee login with credentials stored in Google Sheets (`CREDENTIALS` sheet).
+* Fetches payslip data from multiple sheets (`TA_MS`, `TA_AGENTS`).
 * Reset password flow with secure token + email notification.
 * PDF generation for payslips.
-* Localhost phpMyAdmin integration for easy data management.
+* Ready to deploy on **Render**.
 
 ---
 
@@ -18,20 +18,18 @@ A PHP web app for managing and viewing employee payslips using **MySQL** via php
 
 ```
 assets/                 # Static files (CSS, JS, images)
-lib/                    # PHP classes (Database, PayslipService, Mailer, PdfService)
+credentials/            # Google Service Account JSON (ignored in git)
+lib/                    # PHP classes (GoogleSheets, PayslipService, Mailer, PdfService)
 storage/cache/payslips/ # Cached PDFs
 vendor/                 # Composer dependencies
 views/                  # Optional HTML partials
 
 .env                    # Local env variables (ignored in git)
-.env.example            # Example environment configuration
-config.php              # App config loader
+config.php              # App config loader (uses dotenv or Render env)
 login.php               # Login page
 logout.php              # Logout script
 payslip.php             # Payslip viewer
-database.sql            # MySQL database schema
-dockerfile              # For container deployment
-SETUP.md                # Database setup instructions
+dockerfile              # For container deployment on Render
 ```
 
 ---
@@ -46,26 +44,15 @@ SETUP.md                # Database setup instructions
    composer install
    ```
 
-2. **Create MySQL database**
-
-   * Open phpMyAdmin at `http://localhost/phpmyadmin`
-   * Create a new database named `payslip`
-   * Import `database.sql` to create tables
-
-3. **Create `.env`** (copy from `.env.example`)
-
-   ```bash
-   cp .env.example .env
-   ```
-
-   Then edit `.env` with your configuration:
+2. **Create `.env`** (for local only)
 
    ```ini
-   # Database (defaults for XAMPP)
-   DB_HOST=localhost
-   DB_USER=root
-   DB_PASS=
-   DB_NAME=payslip
+   # Google Sheets
+   GOOGLE_SERVICE_JSON=credentials/google-service-account.json
+   GOOGLE_SHEET_ID=<your-sheet-id>
+   SHEET_TA_MS=TA_MS
+   SHEET_TA_AGENTS=TA_AGENTS
+   SHEET_CREDENTIALS=CREDENTIALS
 
    # Mail (SMTP)
    MAIL_HOST=smtp.gmail.com
@@ -73,64 +60,23 @@ SETUP.md                # Database setup instructions
    MAIL_USER=youremail@gmail.com
    MAIL_PASS=your-app-password
    MAIL_FROM=youremail@gmail.com
-   MAIL_FROM_NAME="Payslip System"
+   MAIL_FROM_NAME="Payslip"
 
    # App
-   APP_URL=http://localhost/ta-payslip/
-   RESET_TOKEN_TTL_MIN=30
+   APP_URL=http://localhost/ta-payslip
+   RESET_TOKEN_TTL_MIN=35
    RESET_SECRET=change-this-to-a-long-random-string
    APP_LOGO_PATH=assets/ta_logo.png
    ```
 
-4. **Add test data** (optional)
-
-   * Open phpMyAdmin and select the `payslip` database
-   * Insert test records into the `credentials` table
-   * See `SETUP.md` for detailed instructions
-
-5. **Run locally (with XAMPP)**
+3. **Run locally (with XAMPP/WAMP/Laragon)**
 
    * Place project in `htdocs`.
    * Visit [http://localhost/ta-payslip/login.php](http://localhost/ta-payslip/login.php).
 
 ---
 
-## 🗄️ Database Schema
-
-### credentials table
-Stores employee login credentials and password reset information:
-```sql
-- employee_id (VARCHAR, UNIQUE) - Login identifier
-- name (VARCHAR) - Employee name
-- email (VARCHAR) - Email address
-- password (VARCHAR) - Password (currently plaintext)
-- designation (VARCHAR) - Job title
-- reset_token_hash (VARCHAR) - For password reset flow
-- reset_expires (DATETIME) - Token expiration
-```
-
-### payslips table
-Stores payslip records for employees:
-```sql
-- employee_id (VARCHAR, FK) - Link to credentials
-- name (VARCHAR) - Employee name
-- email (VARCHAR) - Email address
-- payroll_date (DATE) - Pay period date
-- gross_pay (DECIMAL) - Gross salary
-- net_pay (DECIMAL) - Net salary
-- deductions (DECIMAL) - Total deductions
-- benefits (DECIMAL) - Benefits amount
-- tax (DECIMAL) - Tax amount
-- notes (TEXT) - Additional notes
-```
-
-See [SETUP.md](SETUP.md) for detailed database setup instructions.
-
----
-
-## ☁️ Deploy on Render (With External MySQL)
-
-For Render deployments, you'll need an external MySQL database (e.g., AWS RDS, PlanetScale):
+## ☁️ Deploy on Render
 
 1. **Push repo to GitHub**
 
@@ -151,54 +97,45 @@ For Render deployments, you'll need an external MySQL database (e.g., AWS RDS, P
 
 3. **Add Environment Variables (Render Dashboard)**
 
-   ```
-   DB_HOST=<external-database-host>
-   DB_USER=<database-user>
-   DB_PASS=<database-password>
-   DB_NAME=payslip
-   
-   MAIL_HOST=smtp.gmail.com
-   MAIL_PORT=587
-   MAIL_USER=youremail@gmail.com
-   MAIL_PASS=your-app-password
-   MAIL_FROM=youremail@gmail.com
-   MAIL_FROM_NAME=Payslip System
-   
-   APP_URL=https://<your-service>.onrender.com/
-   RESET_TOKEN_TTL_MIN=30
-   RESET_SECRET=<long-random-string>
-   APP_LOGO_PATH=assets/ta_logo.png
-   ```
+   * `GOOGLE_SHEET_ID=<your-sheet-id>`
+   * `SHEET_TA_MS=TA_MS`
+   * `SHEET_TA_AGENTS=TA_AGENTS`
+   * `SHEET_CREDENTIALS=CREDENTIALS`
+   * `MAIL_HOST=smtp.gmail.com`
+   * `MAIL_PORT=587`
+   * `MAIL_USER=youremail@gmail.com`
+   * `MAIL_PASS=your-app-password`
+   * `MAIL_FROM=youremail@gmail.com`
+   * `MAIL_FROM_NAME=Payslip`
+   * `APP_URL=https://<your-service>.onrender.com`
+   * `RESET_TOKEN_TTL_MIN=35`
+   * `RESET_SECRET=<long-random-string>`
+   * Either:
 
-4. **Initialize remote database**
+     * `GOOGLE_SERVICE_JSON=/opt/render/project/src/credentials/google-service-account.json` (if using **Secret File**)
+     * OR `GOOGLE_APPLICATION_CREDENTIALS_JSON=<paste full JSON>`
 
-   * Connect to your remote MySQL database
-   * Import `database.sql` to create tables
-
-5. **Deploy** → Render will build and launch your payslip system.
+4. **Deploy** → Render will build and launch your payslip system.
 
 ---
 
 ## 🔒 Security Notes
 
-* **Never commit** `.env` → already ignored in `.gitignore`.
-* Always use Gmail **App Password** instead of your real password.
+* **Never commit** `.env` or service account JSON → already ignored in `.gitignore`.
+* Always use Gmail **App Password** instead of real password.
 * Change `RESET_SECRET` to a strong random string.
-* **Passwords**: Currently stored as plaintext. For production, implement password hashing using `password_hash()` and `password_verify()`.
 
 ---
 
 ## ✅ Troubleshooting
 
-* **Database connection failed**: Ensure MySQL is running and `payslip` database exists. Check `.env` credentials.
-* **Table not found**: Import `database.sql` into the `payslip` database via phpMyAdmin.
-* **Login not working**: Verify employee credentials exist in the `credentials` table and passwords match exactly.
-* **Forgot password not working**: Ensure `reset_token_hash` and `reset_expires` columns exist in the `credentials` table.
-* **Email not sending**: Check SMTP credentials in `.env` and verify Gmail App Password is correct.
+* **session\_start() warnings**: make sure nothing `echo`s before `session_start()`. Fixed in `config.php`.
+* **Dotenv not found on Render**: safe, Render uses real env vars. `.env` is only for local.
+* **Invalid credentials**: check your `CREDENTIALS` sheet header spelling (`EMPLOYEE ID`, `PASSWORD`, `NAME`, `EMAIL`).
+* **Forgot password not updating**: ensure `RESET_TOKEN_HASH` and `RESET_EXPIRES` columns exist in the `CREDENTIALS` sheet.
 
 ---
 
 ## 📜 License
 
 MIT (or your chosen license)
-

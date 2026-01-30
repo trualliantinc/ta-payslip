@@ -1,23 +1,25 @@
 <?php
 require __DIR__.'/config.php';
-require __DIR__.'/lib/Database.php';
+require __DIR__.'/lib/GoogleSheets.php';
 
 $uid   = $_GET['uid']   ?? '';
 $token = $_GET['token'] ?? '';
 $valid = false;
 
-// Validate token against the database
+// Validate token against the sheet
 if ($uid && $token) {
   try {
-    $db   = new Database(DB_HOST, DB_USER, DB_PASS, DB_NAME);
-    $user = $db->getRowByKey('credentials', 'employee_id', $uid);
-    
-    if ($user) {
-      $hash = hash_hmac('sha256', $token, RESET_SECRET);
-      if (!empty($user['reset_token_hash']) &&
-          hash_equals($user['reset_token_hash'], $hash) &&
-          strtotime($user['reset_expires'] ?? '1970-01-01') > time()) {
-        $valid = true;
+    $gs   = new GoogleSheets(SHEET_ID, GOOGLE_CREDS);
+    $rows = $gs->getAssoc(SHEET_CREDENTIALS);
+    foreach ($rows as $r) {
+      if (trim((string)($r['EMPLOYEE ID'] ?? '')) === trim($uid)) {
+        $hash = hash_hmac('sha256', $token, $_ENV['RESET_SECRET']);
+        if (!empty($r['RESET_TOKEN_HASH']) &&
+            hash_equals($r['RESET_TOKEN_HASH'], $hash) &&
+            strtotime($r['RESET_EXPIRES'] ?? '1970-01-01') > time()) {
+          $valid = true;
+        }
+        break;
       }
     }
   } catch (Throwable $e) {

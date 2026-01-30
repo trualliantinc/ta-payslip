@@ -1,6 +1,6 @@
 <?php
 require __DIR__.'/config.php';
-require __DIR__.'/lib/Database.php';
+require __DIR__.'/lib/GoogleSheets.php';
 require __DIR__.'/lib/Mailer.php';
 
 $messageTitle = 'Check your email';
@@ -17,30 +17,37 @@ function maskEmail($email) {
 $emp = trim($_POST['employee_id'] ?? '');
 if ($emp) {
   try {
-    $db   = new Database(DB_HOST, DB_USER, DB_PASS, DB_NAME);
-    $user = $db->getRowByKey('credentials', 'employee_id', $emp);
+    $gs   = new GoogleSheets(SHEET_ID, GOOGLE_CREDS);
+    $rows = $gs->getAssoc(SHEET_CREDENTIALS);
+    $user = null;
+
+    foreach ($rows as $r){
+      if (trim((string)($r['EMPLOYEE ID'] ?? '')) === trim($emp)){
+        $user = $r; break;
+      }
+    }
 
     if ($user) {
       $raw  = bin2hex(random_bytes(32));
-      $hash = hash_hmac('sha256', $raw, RESET_SECRET);
-      $ttl  = RESET_TOKEN_TTL_MIN;
+      $hash = hash_hmac('sha256', $raw, $_ENV['RESET_SECRET']);
+      $ttl  = (int)($_ENV['RESET_TOKEN_TTL_MIN'] ?? 30);
       $exp  = gmdate('c', time()+$ttl*60);
 
-      $db->updateRowByKey('credentials', 'employee_id', $emp, [
-        'reset_token_hash' => $hash,
-        'reset_expires'    => $exp
+      $gs->updateRowByKey(SHEET_CREDENTIALS, 'EMPLOYEE ID', $emp, [
+        'RESET_TOKEN_HASH' => $hash,
+        'RESET_EXPIRES'    => $exp
       ]);
 
-      $link = rtrim(APP_URL,'/')."/reset.php?uid=".urlencode($emp)."&token={$raw}";
-      $html = "Hi ".htmlspecialchars($user['name'] ?? $emp).",<br><br>"
+      $link = rtrim($_ENV['APP_URL'],'/')."/reset.php?uid=".urlencode($emp)."&token={$raw}";
+      $html = "Hi ".htmlspecialchars($user['NAME'] ?? $emp).",<br><br>"
             . "Click to reset your password (valid {$ttl} minutes):<br>"
             . "<a href=\"$link\">Reset Password</a><br><br>"
-            . "If you didn't request this, you can safely ignore this email.";
+            . "If you didn’t request this, you can safely ignore this email.";
 
-      $to = $user['email'];
+      $to = $user['EMAIL'] ?? MAIL_USER;
       Mailer::sendHtml(
-        $user['email'],
-        $user['name']  ?? $emp,
+        $user['EMAIL'] ?? MAIL_USER,
+        $user['NAME']  ?? $emp,
         'Password Reset',
         $html,
         MAIL_FROM,          // fromEmail (or a different mailbox if you have one)
